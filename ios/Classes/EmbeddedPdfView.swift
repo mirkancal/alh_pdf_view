@@ -54,7 +54,7 @@ class EmbeddedPdfView : UIView {
         super.layoutSubviews()
         
         self.pdfView.usePageViewController(configuration.pageFling, withViewOptions: nil)
-
+        
         if(!hasInitializedView) {
             initPdfDefaultScaleFactor()
             goToDefaultPage()
@@ -94,12 +94,12 @@ class EmbeddedPdfView : UIView {
         if let scrollView = uiView as? UIScrollView {
             return scrollView
         }
-            
+        
         for view in uiView.subviews {
-           if let scrollView = view as? UIScrollView {
-               return scrollView
+            if let scrollView = view as? UIScrollView {
+                return scrollView
             }
-                
+            
             if !view.subviews.isEmpty {
                 return findUIScrollView(of: view)
             }
@@ -126,9 +126,14 @@ class EmbeddedPdfView : UIView {
         updatedConfiguration = newConfiguration
     }
     
-   private func initPdfDefaultScaleFactor() {
+    private func initPdfDefaultScaleFactor() {
         let initScaleFactor = getPdfScaleFactor()
         initPdfViewScaleFactor = initScaleFactor
+        
+        
+        
+        
+        
         self.pdfView.scaleFactor = configuration.defaultZoomFactor * initScaleFactor
         self.pdfView.minScaleFactor = configuration.minZoom * initScaleFactor
         self.pdfView.maxScaleFactor = configuration.maxZoom * initScaleFactor
@@ -235,6 +240,11 @@ class EmbeddedPdfView : UIView {
     }
     
     func handleSwipe(gesture: UISwipeGestureRecognizer) {
+        
+        
+        
+        
+        
         if(gesture.direction == .left) {
             _ = goToNextPage(withAnimation: true)
         } else if (gesture.direction == .right){
@@ -269,10 +279,92 @@ class EmbeddedPdfView : UIView {
         }
         return false
     }
+    
+    
+    func removeSearchHighlights() {
+        guard let document = pdfView.document else { return }
+        
+        for i in 0..<document.pageCount {
+            if let page = document.page(at: i) {
+                let annotations = page.annotations
+                for annotation in annotations {
+                    page.removeAnnotation(annotation)
+                }
+            }
+        }
+        
+        // Force the PDFView to redraw
+        pdfView.setNeedsDisplay()
+    }
+    
+    
+    
+    
+    
+    
+    func highlightSearchText(searchText: String, result: @escaping FlutterResult) {
+        guard let pdfDocument = pdfView.document else {
+            result(false)
+            return
+        }
+        
+        removeSearchHighlights()
+        var allSelections: [PDFSelection] = []
+        
+        for pageIndex in 0..<pdfDocument.pageCount {
+            guard let pdfPage = pdfDocument.page(at: pageIndex) else { continue }
+            let searchResults = pdfDocument.findString(searchText, withOptions: .caseInsensitive)
+            
+            for selection in searchResults {
+                let annotation = PDFAnnotation(bounds: selection.bounds(for: pdfPage), forType: .highlight, withProperties: nil)
+                annotation.color = UIColor(red: 0.96, green: 0.93, blue: 0.76, alpha: 1.0)
+                annotation.page = pdfPage
+                pdfPage.addAnnotation(annotation)
+                // Set the blending mode for the annotation color
+                if let context = UIGraphicsGetCurrentContext() {
+                    context.setBlendMode(.multiply)
+                    annotation.draw(with: .mediaBox, in: context)
+                }
+                print("Adding highlight annotation on page \(pageIndex) with type: \(annotation.type)") // Debugging line
+                
+                
+                allSelections.append(selection)
+            }
+        }
+        
+        //        pdfView.highlightedSelections = allSelections
+        
+        // Set the page to the first occurrence of the search text
+        if let firstOccurrence = findFirstOccurrenceOfSearchText(searchText, inDocument: pdfDocument) {
+            if let firstOccurrencePage = firstOccurrence.pages.first {
+                pdfView.go(to: firstOccurrencePage)
+            }
+        }
+        
+        // Force the PDFView to redraw
+        pdfView.setNeedsDisplay()
+        
+        result(true)
+    }
+    
+    func findFirstOccurrenceOfSearchText(_ searchText: String, inDocument pdfDocument: PDFDocument) -> PDFSelection? {
+        for pageIndex in 0..<pdfDocument.pageCount {
+            guard pdfDocument.page(at: pageIndex) != nil else { continue }
+            let searchResults = pdfDocument.findString(searchText, withOptions: .caseInsensitive)
+            
+            if searchResults.count > 0 {
+                return searchResults[0]
+            }
+        }
+        return nil
+    }
+    
+    
+    
 }
 
 extension EmbeddedPdfView : PDFViewDelegate {
-  
+    
     func pdfViewWillClick(onLink sender: PDFView, with url: URL) {
         
         // If onLinkHandle is provided, call the method, otherwise open the URL in the browser

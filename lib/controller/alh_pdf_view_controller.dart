@@ -147,4 +147,10 @@ class AlhPdfViewController {
         await this._channel.invokeMethod('pageSize', {'page': page});
     return Size(sizeMap["width"], sizeMap["height"]);
   }
+
+  Future<bool> highlightSearchText({required String text}) async {
+    return await this._channel.invokeMethod('highlightSearchText', {
+      'text': text,
+    });
+  }
 }
