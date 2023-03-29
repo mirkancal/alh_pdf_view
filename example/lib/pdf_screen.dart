@@ -36,7 +36,20 @@ class _PDFScreenState extends State<PDFScreen> {
     return OrientationBuilder(
       builder: (context, orientation) {
         return Scaffold(
-          appBar: AppBar(title: const Text("Document Portrait")),
+          appBar: AppBar(
+            title: const Text("Document Portrait"),
+            actions: [
+              IconButton(
+                icon: Icon(Icons.search),
+                onPressed: () async {
+                  final searchText = await _showSearchDialog(context);
+                  if (searchText != null && searchText.isNotEmpty) {
+                    pdfViewController?.highlightSearchText(text: searchText);
+                  }
+                },
+              ),
+            ],
+          ),
           body: Stack(
             children: <Widget>[
               Column(
@@ -109,6 +122,36 @@ class _PDFScreenState extends State<PDFScreen> {
                 Center(child: Text(this.errorMessage))
             ],
           ),
+        );
+      },
+    );
+  }
+
+  Future<String?> _showSearchDialog(BuildContext context) async {
+    TextEditingController searchTextController = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Search'),
+          content: TextField(
+            controller: searchTextController,
+            decoration: InputDecoration(hintText: 'Enter search text'),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop(null);
+              },
+            ),
+            TextButton(
+              child: Text('Search'),
+              onPressed: () {
+                Navigator.of(context).pop(searchTextController.text);
+              },
+            ),
+          ],
         );
       },
     );
