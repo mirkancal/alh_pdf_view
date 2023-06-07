@@ -302,7 +302,7 @@ class EmbeddedPdfView : UIView {
     
     
     
-    func highlightSearchText(searchText: String, result: @escaping FlutterResult) {
+    func highlightSearchText(searchText: String, autoSetPage: Bool = true, specificPage: Int? = nil, result: @escaping FlutterResult) {
         guard let pdfDocument = pdfView.document else {
             result(false)
             return
@@ -311,7 +311,10 @@ class EmbeddedPdfView : UIView {
         removeSearchHighlights()
         var allSelections: [PDFSelection] = []
         
-        for pageIndex in 0..<pdfDocument.pageCount {
+        let startPage = specificPage ?? 0
+        let endPage = specificPage ?? (pdfDocument.pageCount - 1)
+
+        for pageIndex in startPage...endPage {
             guard let pdfPage = pdfDocument.page(at: pageIndex) else { continue }
             let searchResults = pdfDocument.findString(searchText, withOptions: .caseInsensitive)
             
@@ -327,15 +330,12 @@ class EmbeddedPdfView : UIView {
                 }
                 print("Adding highlight annotation on page \(pageIndex) with type: \(annotation.type)") // Debugging line
                 
-                
                 allSelections.append(selection)
             }
         }
         
-        //        pdfView.highlightedSelections = allSelections
-        
-        // Set the page to the first occurrence of the search text
-        if let firstOccurrence = findFirstOccurrenceOfSearchText(searchText, inDocument: pdfDocument) {
+        // Set the page to the first occurrence of the search text, if autoSetPage is true
+        if autoSetPage, let firstOccurrence = findFirstOccurrenceOfSearchText(searchText, inDocument: pdfDocument) {
             if let firstOccurrencePage = firstOccurrence.pages.first {
                 pdfView.go(to: firstOccurrencePage)
             }
@@ -346,6 +346,7 @@ class EmbeddedPdfView : UIView {
         
         result(true)
     }
+
     
     func findFirstOccurrenceOfSearchText(_ searchText: String, inDocument pdfDocument: PDFDocument) -> PDFSelection? {
         for pageIndex in 0..<pdfDocument.pageCount {

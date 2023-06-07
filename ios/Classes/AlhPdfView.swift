@@ -130,10 +130,12 @@ class AlhPdfView: NSObject, FlutterPlatformView {
             result(nil)
             break
         case "highlightSearchText":
-                   let arguments = call.arguments as! Dictionary<String, Any>
-                   let searchText = arguments["text"] as! String
-                   _embeddedPdfView.highlightSearchText(searchText: searchText, result: result)
-                   break
+            let arguments = call.arguments as! Dictionary<String, Any>
+            let searchText = arguments["text"] as! String
+            let autoSetPage = arguments["autoSetPage"] as? Bool ?? true
+            let specificPage = arguments["specificPage"] as? Int
+            _embeddedPdfView.highlightSearchText(searchText: searchText, autoSetPage: autoSetPage, specificPage: specificPage, result: result)
+            break
         default:
             result(FlutterMethodNotImplemented)
         }
